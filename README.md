@@ -1,4 +1,4 @@
-![](https://travis-ci.org/christian-blades-cb/proquint-rs.svg?branch=master)
+[![Build Status](https://travis-ci.org/christian-blades-cb/proquint-rs.svg?branch=master)](https://travis-ci.org/christian-blades-cb/proquint-rs)
 
 # proquint-rs
 
