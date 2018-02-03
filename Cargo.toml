@@ -1,0 +1,6 @@
+[package]
+name = "proquint"
+version = "0.1.0"
+authors = ["Christian Blades <christian.blades+github@gmail.com>"]
+
+[dependencies]
