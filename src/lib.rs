@@ -1,3 +1,21 @@
+//! Library for converting to and from proquints.
+//!
+//! # Proquint
+//!
+//! A proquint is a pronouncable representation of an identifier, such
+//! as an IP address, document number, user id, etc. The purpose is to
+//! provide a more convenient way for humans to
+//! interact/remember/communicate with unique identifiers.
+//!
+//! # Example
+//! ```
+//! use proquint::Quintable;
+//! use std::net::Ipv4Addr;
+//!
+//! let home = Ipv4Addr::new(127, 0, 0, 1);
+//! assert_eq!(home.to_quint(), "lusab-babad");
+//! ```
+
 use std::error;
 use std::fmt::{Display, Formatter};
 use std::fmt;
@@ -38,7 +56,25 @@ impl error::Error for QuintError {
 pub trait Quintable
     where Self: Sized
 {
+    /// Converts this type into a proquint String
+    ///
+    /// # Example
+    /// ```
+    /// use proquint::Quintable;
+    ///
+    /// let foo: u32 = 12;
+    /// assert_eq!(foo.to_quint(), "babab-babas");
+    /// ```
     fn to_quint(&self) -> String;
+
+    /// Converts a proquint string to this type
+    ///
+    /// # Example
+    /// ```
+    /// use proquint::Quintable;
+    ///
+    /// assert_eq!(u32::from_quint("rotab-vinat").unwrap(), 3141592653u32);
+    /// ```
     fn from_quint(&str) -> Result<Self, QuintError>;
 }
 
