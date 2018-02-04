@@ -7,6 +7,8 @@
 //! provide a more convenient way for humans to
 //! interact/remember/communicate with unique identifiers.
 //!
+//! Original proposal found here: https://arxiv.org/html/0901.4016
+//!
 //! # Example
 //! ```
 //! use proquint::Quintable;
