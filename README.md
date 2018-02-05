@@ -1,4 +1,4 @@
-# proquint-rs [![Build Status](https://travis-ci.org/christian-blades-cb/proquint-rs.svg?branch=master)](https://travis-ci.org/christian-blades-cb/proquint-rs)
+# proquint-rs [![Build Status](https://travis-ci.org/christian-blades-cb/proquint-rs.svg?branch=master)](https://travis-ci.org/christian-blades-cb/proquint-rs) [![Latest Version](https://img.shields.io/crates/v/proquint.svg)](https://crates.io/crates/proquint) [![Docs](https://docs.rs/proquint/badge.svg)](https://docs.rs/proquint)
 
 Proquints are readable, pronouncable representations of identifiers. This is a Rust library for converting between them.
 
