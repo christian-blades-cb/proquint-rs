@@ -23,7 +23,7 @@ use std::fmt::{Display, Formatter};
 use std::fmt;
 use std::ops::{ShlAssign, AddAssign};
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum QuintError {
     InputTooSmall,
     InputTooLarge,
@@ -81,14 +81,16 @@ pub trait Quintable
 }
 
 macro_rules! decons {
-    ($res:ident, $x:expr) => {{
+    ($res:ident, $bitcounter:ident, $x:expr) => {{
+        $bitcounter += 4;
         $res <<= 4;
         $res += $x;
     }}
 }
 
 macro_rules! devowel {
-    ($res:ident, $x:expr) => {{
+    ($res:ident, $bitcounter:ident, $x:expr) => {{
+        $bitcounter += 2;
         $res <<= 2;
         $res += $x;
     }}
@@ -119,42 +121,62 @@ const MASK_FIRST2_U16: u16 = 0xC000;
 
 const SEPARATOR: char = '-';
 
-pub fn from_quint<T>(quint: &str) -> Result<T, QuintError>
+/// Generic function for converting a proquint string to the given type.
+///
+/// Returns the decoded type as well as the number of bits decoded. A full proquint is 16 bits, so a valid proquint will be a multiple of this size.
+pub fn from_quint<T>(quint: &str) -> (T, usize)
     where T: Sized + Default + ShlAssign<isize> + AddAssign<T> + From<u8>
 {
+    let mut bitcounter = 0usize;
     let mut res: T = T::default();
     for c in quint.chars() {
         match c {
             // consonants
-            'b' => decons!(res, T::from(0u8)),
-            'd' => decons!(res, T::from(1u8)),
-            'f' => decons!(res, T::from(2u8)),
-            'g' => decons!(res, T::from(3u8)),
-            'h' => decons!(res, T::from(4u8)),
-            'j' => decons!(res, T::from(5u8)),
-            'k' => decons!(res, T::from(6u8)),
-            'l' => decons!(res, T::from(7u8)),
-            'm' => decons!(res, T::from(8u8)),
-            'n' => decons!(res, T::from(9u8)),
-            'p' => decons!(res, T::from(10u8)),
-            'r' => decons!(res, T::from(11u8)),
-            's' => decons!(res, T::from(12u8)),
-            't' => decons!(res, T::from(13u8)),
-            'v' => decons!(res, T::from(14u8)),
-            'z' => decons!(res, T::from(15u8)),
+            'b' => decons!(res, bitcounter, T::from(0u8)),
+            'd' => decons!(res, bitcounter, T::from(1u8)),
+            'f' => decons!(res, bitcounter, T::from(2u8)),
+            'g' => decons!(res, bitcounter, T::from(3u8)),
+            'h' => decons!(res, bitcounter, T::from(4u8)),
+            'j' => decons!(res, bitcounter, T::from(5u8)),
+            'k' => decons!(res, bitcounter, T::from(6u8)),
+            'l' => decons!(res, bitcounter, T::from(7u8)),
+            'm' => decons!(res, bitcounter, T::from(8u8)),
+            'n' => decons!(res, bitcounter, T::from(9u8)),
+            'p' => decons!(res, bitcounter, T::from(10u8)),
+            'r' => decons!(res, bitcounter, T::from(11u8)),
+            's' => decons!(res, bitcounter, T::from(12u8)),
+            't' => decons!(res, bitcounter, T::from(13u8)),
+            'v' => decons!(res, bitcounter, T::from(14u8)),
+            'z' => decons!(res, bitcounter, T::from(15u8)),
 
             // vowels
-            'a' => devowel!(res, T::from(0u8)),
-            'i' => devowel!(res, T::from(1u8)),
-            'o' => devowel!(res, T::from(2u8)),
-            'u' => devowel!(res, T::from(3u8)),
+            'a' => devowel!(res, bitcounter, T::from(0u8)),
+            'i' => devowel!(res, bitcounter, T::from(1u8)),
+            'o' => devowel!(res, bitcounter, T::from(2u8)),
+            'u' => devowel!(res, bitcounter, T::from(3u8)),
 
             // separators
             _ => (),
         }
     }
 
-    Ok(res)
+    (res, bitcounter)
+}
+
+macro_rules! impl_from_quint {
+    ($expected_bits:expr) => {
+        fn from_quint(quint: &str) -> Result<Self, QuintError> {
+            let (res, bits) = from_quint(quint);
+            if bits == $expected_bits {
+                return Ok(res);
+            }
+            if bits < $expected_bits {
+                return Err(QuintError::InputTooSmall);
+            } else {
+                return Err(QuintError::InputTooLarge);
+            }
+        }
+    }
 }
 
 impl Quintable for u16 {
@@ -173,9 +195,7 @@ impl Quintable for u16 {
         out
     }
 
-    fn from_quint(quint: &str) -> Result<Self, QuintError> {
-        from_quint(quint)
-    }
+    impl_from_quint!(16);
 }
 
 impl Quintable for u32 {
@@ -191,9 +211,7 @@ impl Quintable for u32 {
         out
     }
 
-    fn from_quint(quint: &str) -> Result<Self, QuintError> {
-        from_quint(quint)
-    }
+    impl_from_quint!(32);
 }
 
 impl Quintable for u64 {
@@ -215,9 +233,7 @@ impl Quintable for u64 {
         out
     }
 
-    fn from_quint(quint: &str) -> Result<Self, QuintError> {
-        from_quint(quint)
-    }
+    impl_from_quint!(64);
 }
 
 impl Quintable for std::net::Ipv4Addr {
@@ -245,12 +261,27 @@ impl Quintable for std::net::Ipv4Addr {
 mod tests {
     use std::net::Ipv4Addr;
     use Quintable;
+    use QuintError;
 
     fn ipv4_test(ipv4: [u8; 4], quint: &str) {
         assert_eq!(Ipv4Addr::from(ipv4).to_quint(), quint);
 
         let actual = Ipv4Addr::from_quint(quint).unwrap();
         assert_eq!(actual, Ipv4Addr::from(ipv4));
+    }
+
+    #[test]
+    fn quint_too_small() {
+        assert_eq!(u16::from_quint("lub").err(), Some(QuintError::InputTooSmall));
+        assert_eq!(u32::from_quint("lubab").err(), Some(QuintError::InputTooSmall));
+        assert_eq!(u64::from_quint("lubab-gutuz").err(), Some(QuintError::InputTooSmall));
+    }
+
+    #[test]
+    fn quint_too_large() {
+        assert_eq!(u16::from_quint("lubab-gutuz").err(), Some(QuintError::InputTooLarge));
+        assert_eq!(u32::from_quint("lubab-gutuz-kobim").err(), Some(QuintError::InputTooLarge));
+        assert_eq!(u64::from_quint("lubab-gutuz-kobim-fival-bison").err(), Some(QuintError::InputTooLarge));
     }
 
     #[test]
